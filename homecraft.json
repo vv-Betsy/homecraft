@@ -1,9 +1,9 @@
 {
   "version": 1,
-  "name": "My Home",
-  "url": "",
-  "logo": "assets/favicon.png",
-  "intro": "",
+  "name": { "zh": "Sakura的家", "en": "Sakura's home" },
+  "url": "https://vvbetsy.ipv64.de/",
+  "logo": "assets/logo.png",
+  "intro": { "zh": "野生软件开发工程师菜鸡一枚。", "en": "A wild software development engineer, a beginner." },
   "lang": ["zh", "en"],
   "homecraft": true
 }
