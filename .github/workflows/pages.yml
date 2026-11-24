@@ -24,12 +24,9 @@ concurrency:
   group: pages
   cancel-in-progress: true
 jobs:
-  deploy:
+  build:
     if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && vars.DEPLOY_PAGES == 'true') || (github.event_name == 'schedule' && vars.HOMECRAFT_DIRECTORY == 'true')
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -45,8 +42,38 @@ jobs:
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      # Uploading and deploying in one job races the artifact service's
+      # listing: it can report zero artifacts right after a successful
+      # upload (actions/deploy-pages#451). A separate job gives it time.
       - id: deployment
         uses: actions/deploy-pages@v4
+      # Only the main repository verifies the published directory; it needs
+      # the built files and tools from the repository again.
+      - uses: actions/checkout@v7
+        if: vars.HOMECRAFT_DIRECTORY == 'true'
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        if: vars.HOMECRAFT_DIRECTORY == 'true'
+        with:
+          node-version: 24
+      - uses: actions/download-artifact@v4
+        if: vars.HOMECRAFT_DIRECTORY == 'true'
+        with:
+          name: github-pages
+          path: artifact
+      - name: Restore the built directory (main repository only)
+        if: vars.HOMECRAFT_DIRECTORY == 'true'
+        run: |
+          mkdir -p dist
+          tar -xf artifact/artifact.tar -C dist
       - name: Verify published directory
         id: verify
         if: vars.HOMECRAFT_DIRECTORY == 'true'
